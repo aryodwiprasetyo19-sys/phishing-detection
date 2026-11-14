@@ -1,0 +1,7 @@
+[
+  {
+    "file": "PhiUSIIL_Phishing_URL_Dataset.csv",
+    "label_col": "label",
+    "phishing_value": 0
+  }
+]

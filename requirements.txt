@@ -1,0 +1,33 @@
+# ============================================================
+# PhishGuard XAI — Dependensi Python
+# Hanya berisi paket yang benar-benar digunakan oleh proyek.
+# Instal dengan:  pip install -r requirements.txt
+# ============================================================
+
+# --- Web framework & runtime ---
+Flask==3.0.3
+python-dotenv==1.0.1
+gunicorn==22.0.0          # WSGI server untuk produksi (dipakai oleh wsgi.py)
+
+# --- Database MySQL ---
+PyMySQL==1.1.1
+cryptography==42.0.7      # diperlukan PyMySQL untuk auth caching_sha2_password (MySQL 8)
+
+# --- Data & machine learning ---
+pandas==2.2.2
+numpy==1.26.4
+scikit-learn==1.5.0
+xgboost==2.0.3
+lightgbm==4.3.0
+catboost==1.2.5
+joblib==1.4.2
+
+# --- Explainable AI ---
+shap==0.45.1
+
+# --- Umur domain (opsional, dipakai situasional saat prediksi) ---
+python-whois==0.9.4
+
+# --- Notebook ML & visualisasi (untuk phishing_ml_pipeline.ipynb) ---
+jupyter==1.0.0
+matplotlib==3.9.0

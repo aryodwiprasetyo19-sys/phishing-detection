@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}Perbandingan Algoritma — PhishGuard XAI{% endblock %}
+
+{#
+  comparison.html
+  ===============
+  Menampilkan perbandingan performa keempat algoritma (Random Forest, XGBoost,
+  LightGBM, CatBoost) berdasarkan metrik evaluasi.
+
+  Variabel dari route history.comparison():
+    metrics    : list dict { model_name, display_name, accuracy, precision,
+                             recall, f1_score, roc_auc, training_time_sec }
+                 sudah terurut menurun berdasarkan f1_score.
+    best_model : model_name dengan f1_score tertinggi (untuk penyorotan baris).
+#}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+
+        <div class="eyebrow mb-2">MODEL COMPARISON</div>
+        <h1 class="mb-2">Perbandingan Algoritma</h1>
+        <p class="lead mb-4" style="color:var(--muted);">
+            Evaluasi keempat algoritma tree-based pada data uji menggunakan metrik
+            Accuracy, Precision, Recall, F1-Score, dan ROC-AUC.
+        </p>
+
+        {% if not metrics %}
+        <div class="alert-soc alert-info-soc">
+            Belum ada metrik yang tersedia. Jalankan pipeline training terlebih dahulu:
+            <span class="mono">python training/train_models.py</span> lalu
+            <span class="mono">python training/evaluate_models.py</span>.
+        </div>
+        {% else %}
+
+        <!-- Grafik perbandingan -->
+        <div class="card-soc mb-4"><div class="card-body">
+            <h3 class="mb-3">Grafik Perbandingan Metrik</h3>
+            <div style="height:380px;">
+                <canvas id="comparisonChart"></canvas>
+            </div>
+        </div></div>
+
+        <!-- Tabel metrik -->
+        <div class="card-soc mb-4"><div class="card-body">
+            <h3 class="mb-3">Tabel Metrik Evaluasi</h3>
+            <div class="table-responsive">
+                <table class="table-soc">
+                    <thead>
+                        <tr>
+                            <th>Algoritma</th>
+                            <th>Accuracy</th>
+                            <th>Precision</th>
+                            <th>Recall</th>
+                            <th>F1-Score</th>
+                            <th>ROC-AUC</th>
+                            <th>Waktu Latih (s)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for m in metrics %}
+                        <tr class="{% if m.model_name == best_model %}best-row{% endif %}">
+                            <td>
+                                {{ m.display_name }}
+                                {% if m.model_name == best_model %}
+                                    <span class="risk-pill Low">terbaik</span>
+                                {% endif %}
+                            </td>
+                            <td class="mono">{{ '%.4f'|format(m.accuracy) }}</td>
+                            <td class="mono">{{ '%.4f'|format(m.precision) }}</td>
+                            <td class="mono">{{ '%.4f'|format(m.recall) }}</td>
+                            <td class="mono">{{ '%.4f'|format(m.f1_score) }}</td>
+                            <td class="mono">{{ '%.4f'|format(m.roc_auc) }}</td>
+                            <td class="mono">
+                                {% if m.training_time_sec is not none %}
+                                    {{ '%.2f'|format(m.training_time_sec) }}
+                                {% else %}—{% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <p class="text-muted mt-3" style="font-size:.85rem;">
+                Baris tersorot adalah model dengan F1-Score tertinggi. F1-Score dipilih
+                sebagai acuan utama karena menyeimbangkan Precision dan Recall — penting
+                pada deteksi phishing yang datanya cenderung tidak seimbang.
+            </p>
+            {% if best_explanation %}
+            <div class="alert-soc alert-info-soc mt-2" style="font-size:.88rem;">
+                <b>Kenapa {{ metrics[0].display_name }} yang terbaik?</b>
+                {{ best_explanation }}
+            </div>
+            {% endif %}
+        </div></div>
+
+        {% endif %}
+
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+{% if metrics %}
+<script>
+    const METRICS = {{ metrics|tojson }};
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const labels = METRICS.map(m => m.display_name);
+
+        const metricDefs = [
+            { key: 'accuracy',  label: 'Accuracy',  color: '#0FB5A6' },
+            { key: 'precision', label: 'Precision', color: '#2563EB' },
+            { key: 'recall',    label: 'Recall',    color: '#D97706' },
+            { key: 'f1_score',  label: 'F1-Score',  color: '#7C3AED' },
+            { key: 'roc_auc',   label: 'ROC-AUC',   color: '#DC2626' },
+        ];
+
+        const datasets = metricDefs.map(d => ({
+            label: d.label,
+            data: METRICS.map(m => m[d.key]),
+            backgroundColor: d.color,
+            borderRadius: 4,
+        }));
+
+        new Chart(document.getElementById('comparisonChart'), {
+            type: 'bar',
+            data: { labels: labels, datasets: datasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 1,
+                        grid: { color: '#EEF1F7' },
+                        title: { display: true, text: 'Skor (0 - 1)' },
+                    },
+                    x: { grid: { display: false } },
+                },
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => `${ctx.dataset.label}: ${Number(ctx.parsed.y).toFixed(4)}`,
+                        },
+                    },
+                },
+            },
+        });
+    });
+</script>
+{% endif %}
+{% endblock %}

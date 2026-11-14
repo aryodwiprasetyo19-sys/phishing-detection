@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}Tentang — PhishGuard XAI{% endblock %}
+
+{#
+  about.html
+  ==========
+  Halaman informasi: metodologi penelitian, penjelasan 4 algoritma,
+  ikhtisar 40 fitur, penjelasan Explainable AI (SHAP), dan sumber dataset.
+
+  Variabel dari route main.about():
+    model_names : dict { key: display_name } keempat algoritma.
+#}
+
+{% block content %}
+<section class="section">
+    <div class="container container-narrow">
+
+        <div class="eyebrow mb-2">ABOUT THE SYSTEM</div>
+        <h1 class="mb-2">Tentang PhishGuard XAI</h1>
+        <p class="lead mb-4" style="color:var(--muted);">
+            Sistem deteksi website phishing berbasis web yang memadukan perbandingan
+            empat algoritma machine learning dengan penjelasan yang dapat
+            diinterpretasi (Explainable AI) menggunakan SHAP.
+        </p>
+
+        <div class="card-soc mb-4">
+            <h2 class="h5">Latar Belakang &amp; Tujuan</h2>
+            <p>
+                Serangan phishing memancing korban membuka tautan palsu untuk mencuri
+                kredensial atau data pribadi. Deteksi otomatis membantu pengguna menilai
+                risiko sebuah URL sebelum membukanya. Penelitian ini membandingkan kinerja
+                empat algoritma populer, lalu menyajikan penjelasan mengapa sebuah URL
+                diklasifikasikan sebagai phishing agar hasilnya transparan dan dapat dipercaya.
+            </p>
+            <p class="mb-0">
+                Analisis inti dilakukan <strong>dari struktur URL</strong> (lexical &amp;
+                structural) sehingga cepat dan tanpa mengunjungi isi situs target. Sebagai
+                pelengkap, sistem dapat memeriksa <strong>umur domain via WHOIS secara
+                situasional</strong> saat prediksi (dilewati bila gagal/kena limit) untuk
+                memperkuat analisis. Hasil utama merupakan <strong>gabungan (ensemble) keempat
+                algoritma</strong>, dan tersedia mode untuk melihat pendapat tiap algoritma.
+            </p>
+        </div>
+
+        <div class="card-soc mb-4">
+            <h2 class="h5">Metodologi</h2>
+            <ol class="mb-0" style="padding-left:1.1rem;line-height:1.9;">
+                <li><strong>Ekstraksi fitur</strong> — setiap URL diubah menjadi 40 fitur numerik lexical &amp; structural.</li>
+                <li><strong>Pra-pemrosesan</strong> — normalisasi label dan penskalaan fitur (StandardScaler), pembagian data latih/uji 80:20 secara stratified.</li>
+                <li><strong>Pelatihan &amp; perbandingan</strong> — empat algoritma dilatih pada data yang sama dan dievaluasi memakai accuracy, precision, recall, F1-score, dan ROC-AUC.</li>
+                <li><strong>Explainability</strong> — SHAP menghitung kontribusi tiap fitur terhadap keputusan model untuk setiap prediksi.</li>
+                <li><strong>Penyajian web</strong> — hasil, tingkat risiko, penjelasan, dan saran ditampilkan melalui antarmuka web.</li>
+            </ol>
+        </div>
+
+        <div class="card-soc mb-4">
+            <h2 class="h5">Algoritma yang Dibandingkan</h2>
+            <div class="row g-3 mt-1">
+                <div class="col-md-6">
+                    <div class="mini-box">
+                        <h3 class="h6">{{ model_names.random_forest }}</h3>
+                        <p class="mb-0">Ansambel banyak pohon keputusan (bagging). Stabil, tahan overfitting, dan menyediakan feature importance bawaan.</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mini-box">
+                        <h3 class="h6">{{ model_names.xgboost }}</h3>
+                        <p class="mb-0">Gradient boosting teroptimasi dengan regularisasi. Umumnya berakurasi tinggi pada data tabular.</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mini-box">
+                        <h3 class="h6">{{ model_names.lightgbm }}</h3>
+                        <p class="mb-0">Gradient boosting berbasis histogram dengan pertumbuhan leaf-wise. Cepat dan hemat memori pada dataset besar.</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mini-box">
+                        <h3 class="h6">{{ model_names.catboost }}</h3>
+                        <p class="mb-0">Gradient boosting dengan ordered boosting. Kuat menangani fitur kategori dan mengurangi bias prediksi.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-soc mb-4">
+            <h2 class="h5">40 Fitur URL</h2>
+            <p style="color:var(--muted);">
+                Fitur dikelompokkan menjadi tiga kategori. Semuanya dihitung tanpa mengakses internet.
+            </p>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <h3 class="h6">Panjang &amp; Ukuran</h3>
+                    <ul class="feat-list">
+                        <li>url_length</li><li>hostname_length</li><li>path_length</li>
+                        <li>query_length</li><li>path_depth</li><li>longest_word_length</li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h3 class="h6">Hitungan Karakter</h3>
+                    <ul class="feat-list">
+                        <li>count_dots</li><li>count_hyphen</li><li>count_underscore</li>
+                        <li>count_slash</li><li>count_question</li><li>count_equal</li>
+                        <li>count_at</li><li>count_and</li><li>count_percent</li>
+                        <li>count_digits</li><li>count_letters</li><li>count_params</li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h3 class="h6">Struktur &amp; Indikator</h3>
+                    <ul class="feat-list">
+                        <li>num_subdomains</li><li>has_ip</li><li>has_https</li>
+                        <li>has_port</li><li>has_shortener</li><li>has_suspicious_tld</li>
+                        <li>has_double_slash_in_path</li><li>has_at_symbol</li><li>http_in_path</li>
+                        <li>digit_letter_ratio</li><li>special_char_ratio</li><li>url_entropy</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-soc mb-4">
+            <h2 class="h5">Explainable AI dengan SHAP</h2>
+            <p class="mb-0">
+                SHAP (SHapley Additive exPlanations) memberi nilai kontribusi pada setiap
+                fitur untuk sebuah prediksi. Nilai positif mendorong keputusan ke arah
+                <em>phishing</em>, sedangkan nilai negatif menariknya ke arah
+                <em>legitimate</em>. Dengan begitu, pengguna tidak hanya melihat hasil akhir,
+                tetapi juga <strong>alasan</strong> di baliknya — menjadikan model lebih
+                transparan dan dapat dipertanggungjawabkan.
+            </p>
+        </div>
+
+        <div class="card-soc">
+            <h2 class="h5">Dataset</h2>
+            <p class="mb-0">
+                Model dilatih menggunakan dataset publik berisi kumpulan URL phishing dan
+                legitimate beserta labelnya. Setiap URL mentah diekstraksi menjadi 40 fitur
+                sebelum pelatihan. Konvensi label yang dipakai: <span class="mono">1 = phishing</span>,
+                <span class="mono">0 = legitimate</span>. Petunjuk penyiapan dataset tersedia di berkas
+                <span class="mono">README.md</span>.
+            </p>
+        </div>
+
+    </div>
+</section>
+{% endblock %}

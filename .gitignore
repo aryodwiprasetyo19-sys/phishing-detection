@@ -1,0 +1,50 @@
+# ============================================================
+# PhishGuard XAI — Berkas yang diabaikan dari Git
+# ============================================================
+
+# Kredensial & konfigurasi lokal (JANGAN DIPUSH KE GITHUB)
+.env
+.env.local
+.env.*.local
+
+# Arsip ZIP & File Besar (>100MB dilarang oleh GitHub)
+*.zip
+models_store.zip
+phishing-detector-xai.zip
+
+# Artefak model hasil pelatihan (dibuat lokal oleh pipeline training)
+models_store/
+*.pkl
+*.joblib
+*.cbm
+*.h5
+*.onnx
+
+# Dataset besar (mentah & olahan berukuran ratusan megabyte)
+dataset/raw/*.csv
+dataset/processed/*.csv
+*.csv
+
+# Cache & bytecode Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+env/
+ENV/
+
+# Log & Runtime Info
+catboost_info/
+*.log
+_app_err.log
+_app_out.log
+
+# Berkas sementara editor / OS
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+.ipynb_checkpoints/

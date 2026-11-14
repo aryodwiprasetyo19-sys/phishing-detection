@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}Home — PhishGuard XAI{% endblock %}
+
+{% block content %}
+<!-- HERO + SCANNER (elemen khas) -->
+<section class="hero">
+    <div class="container">
+        <div class="row align-items-center g-5">
+            <div class="col-lg-6">
+                <div class="eyebrow mb-3">EXPLAINABLE PHISHING DETECTION</div>
+                <h1>Periksa keamanan sebuah URL dalam hitungan detik.</h1>
+                <p class="lead mt-3">
+                    Tempel sebuah tautan dan sistem akan menilai apakah ia
+                    <b>berpotensi phishing</b> atau <b>kemungkinan aman</b> —
+                    lengkap dengan <b>penjelasan fitur</b> yang mendasari keputusan model,
+                    bukan sekadar hasil akhir.
+                </p>
+                <div class="mt-4 d-flex gap-2">
+                    <a href="{{ url_for('detection.detect') }}" class="btn btn-teal">Mulai Deteksi</a>
+                    <a href="{{ url_for('history.comparison') }}" class="btn btn-outline-ink" style="background:transparent;color:#fff;border-color:rgba(255,255,255,.25);">Lihat Perbandingan Model</a>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <!-- Scanner cepat: submit langsung ke halaman deteksi -->
+                <div class="scanner" id="quickScanner">
+                    <div class="scanner__bar">
+                        <span class="scanner__dot scanner__dot--r"></span>
+                        <span class="scanner__dot scanner__dot--y"></span>
+                        <span class="scanner__dot scanner__dot--g"></span>
+                        <span class="scanner__label">url-scanner —zsh</span>
+                    </div>
+                    <div class="scanner__input-wrap">
+                        <span class="scanner__prompt">&gt;</span>
+                        <input type="text" id="quickUrl" placeholder="https://contoh-situs.com/login" autocomplete="off" spellcheck="false">
+                        <button class="btn-teal" id="quickBtn">Analisis</button>
+                    </div>
+                    <div class="mt-2" style="font-family:var(--font-mono);font-size:.72rem;color:#6C7A94;">
+                        Analisis lexical/structural — tanpa mengunjungi situs target.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- STATISTIK RINGKAS -->
+<section class="section">
+    <div class="container">
+        <div class="row g-4 justify-content-center">
+            <div class="col-6 col-md-3">
+                <div class="card-soc"><div class="card-body stat">
+                    <div class="num">40</div><div class="lbl">Fitur URL diekstraksi</div>
+                </div></div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card-soc"><div class="card-body stat">
+                    <div class="num">4</div><div class="lbl">Algoritma dibandingkan</div>
+                </div></div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card-soc"><div class="card-body stat">
+                    <div class="num">{{ available_models|length }}</div><div class="lbl">Model aktif</div>
+                </div></div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card-soc"><div class="card-body stat">
+                    <div class="num">{{ total_predictions if total_predictions is not none else '—' }}</div>
+                    <div class="lbl">Prediksi tersimpan</div>
+                </div></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- PIPELINE: langkah nyata & berurutan -->
+<section class="section" style="padding-top:0;">
+    <div class="container">
+        <div class="eyebrow mb-2">CARA KERJA</div>
+        <h2 class="mb-4">Tiga tahap, satu keputusan yang bisa dijelaskan</h2>
+        <div class="pipeline">
+            <div class="step">
+                <div class="num">01 / EXTRACT</div>
+                <h4>Ekstraksi Fitur</h4>
+                <p>URL diubah menjadi 40 fitur numerik lexical &amp; structural — panjang, jumlah subdomain, entropi, TLD mencurigakan, dan lainnya.</p>
+            </div>
+            <div class="step">
+                <div class="num">02 / PREDICT</div>
+                <h4>Prediksi Model</h4>
+                <p>Salah satu dari empat model tree-based menghitung probabilitas phishing dan memetakannya ke tingkat risiko.</p>
+            </div>
+            <div class="step">
+                <div class="num">03 / EXPLAIN</div>
+                <h4>Penjelasan SHAP</h4>
+                <p>SHAP menunjukkan fitur mana yang paling mendorong keputusan, disertai saran tindakan bagi pengguna.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+    // Scanner cepat: teruskan URL ke halaman deteksi via query string.
+    (function () {
+        const go = () => {
+            const v = document.getElementById('quickUrl').value.trim();
+            const base = "{{ url_for('detection.detect') }}";
+            window.location.href = v ? base + '?url=' + encodeURIComponent(v) : base;
+        };
+        document.getElementById('quickBtn').addEventListener('click', go);
+        document.getElementById('quickUrl').addEventListener('keydown', e => {
+            if (e.key === 'Enter') go();
+        });
+    })();
+</script>
+{% endblock %}

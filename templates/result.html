@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+{% block title %}Hasil Analisis — PhishGuard XAI{% endblock %}
+
+{#
+  result.html
+  ===========
+  Menampilkan hasil analisis satu URL secara lengkap sesuai kebutuhan:
+    - URL yang dianalisis
+    - Status (Kemungkinan Legitimate / Berpotensi Phishing)
+    - Probabilitas phishing (%) + gauge
+    - Risk Level (Low / Medium / High)
+    - Explainable AI (SHAP) berupa bar chart kontribusi fitur
+    - Tabel Feature Importance (10 fitur teratas)
+    - Tabel seluruh fitur hasil ekstraksi
+    - Saran otomatis kepada pengguna
+
+  Variabel dari route detection.result():
+    r           : dict record prediksi (dari DB).
+    top_features: list [ [nama, nilai_shap], ... ] terurut menurun.
+#}
+
+{% set vmod = {'Low': 'low', 'Medium': 'med', 'High': 'high'}[r.risk_level] %}
+{% set status_text = 'Berpotensi Phishing' if r.prediction_label == 'phishing' else 'Kemungkinan Aman' %}
+
+{% block content %}
+<section class="section">
+    <div class="container container-narrow">
+
+        <div class="eyebrow mb-2">HASIL ANALISIS</div>
+
+        <!-- Verdict utama -->
+        <div class="verdict verdict--{{ vmod }} mb-4">
+            <span class="verdict__badge badge-{{ vmod }}">{{ status_text }}</span>
+            <div class="flex-grow-1">
+                <div style="font-family:var(--font-mono);font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">
+                    Risk Level
+                </div>
+                <div style="font-family:var(--font-display);font-size:1.35rem;font-weight:700;">
+                    {{ r.risk_level }} &middot; {{ r.phishing_probability_pct }}% kemungkinan phishing
+                </div>
+            </div>
+            <div style="width:150px;height:90px;position:relative;">
+                <canvas id="probGauge"></canvas>
+                <div style="position:absolute;left:0;right:0;bottom:6px;text-align:center;font-family:var(--font-display);font-weight:700;font-size:1.1rem;">
+                    {{ r.phishing_probability_pct }}%
+                </div>
+            </div>
+        </div>
+
+        <!-- URL & metadata -->
+        <div class="card-soc mb-4"><div class="card-body">
+            <div class="mb-2" style="font-family:var(--font-mono);font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">
+                URL yang dianalisis
+            </div>
+            <div class="url-display mb-3">{{ r.url }}</div>
+            <div class="d-flex flex-wrap gap-3 align-items-center" style="font-size:.9rem;">
+                <span>Model:
+                    <b class="mono">{{ r.model_display }}</b>
+                </span>
+                <span>Status:
+                    <span class="label-pill {{ r.prediction_label }}">{{ status_text }}</span>
+                </span>
+                <span>Risiko:
+                    <span class="risk-pill {{ r.risk_level }}">{{ r.risk_level }}</span>
+                </span>
+                {% if r.created_at %}
+                <span class="text-muted">Waktu: {{ r.created_at }}</span>
+                {% endif %}
+            </div>
+        </div></div>
+
+        <!-- Pendapat masing-masing algoritma (bukan cuma hasil ensemble) -->
+        {% if per_model %}
+        <div class="card-soc mb-4"><div class="card-body">
+            <div class="eyebrow mb-1">PERBANDINGAN 4 ALGORITMA</div>
+            <h3 class="mb-1">Pendapat masing-masing algoritma</h3>
+            <p class="text-muted mb-3" style="font-size:.9rem;">
+                Hasil di atas adalah <b>{{ r.model_display }}</b>. Berikut keputusan tiap
+                algoritma secara terpisah untuk URL yang sama.
+            </p>
+            {% for m in per_model %}
+            <div class="compare-verdict-item">
+                <div class="compare-verdict">
+                    <span class="compare-verdict__name">
+                        {{ m.model_display }}
+                        {% if r.best_model and m.model_used == r.best_model.model_name %}
+                            <span class="risk-pill Low">terbaik</span>
+                        {% endif %}
+                    </span>
+                    <span class="label-pill {{ m.prediction_label }}">
+                        {{ 'Berpotensi Phishing' if m.prediction_label == 'phishing' else 'Kemungkinan Aman' }}
+                    </span>
+                    <span class="risk-pill {{ m.risk_level }}">{{ m.risk_level }}</span>
+                    <span class="mono">{{ m.phishing_probability_pct }}%</span>
+                </div>
+                <p class="compare-verdict__explain">{{ m.explanation }}</p>
+            </div>
+            {% endfor %}
+        </div></div>
+        {% endif %}
+
+        <!-- Analisis AI: narasi berbahasa awam (penjelasan utama) -->
+        {% if narrative %}
+        <div class="card-soc mb-4 narrative-card narrative-card--{{ vmod }}"><div class="card-body">
+            <div class="eyebrow mb-2">🧠 ANALISIS AI</div>
+            <ul class="narrative-list">
+                {% for p in narrative.points %}
+                <li class="narrative-item narrative-item--{{ p.direction }}">{{ p.text }}</li>
+                {% endfor %}
+            </ul>
+            <p class="narrative-conclusion">{{ narrative.conclusion }}</p>
+            {% if r.best_model %}
+            <p class="text-muted mt-3 mb-0" style="font-size:.85rem;">
+                📊 Analisis ini dihasilkan dari <b>{{ r.model_display }}</b>. Sistem melatih 4
+                algoritma secara paralel; berdasarkan evaluasi pada data uji, algoritma dengan
+                performa terbaik adalah <b>{{ r.best_model.display_name }}</b>
+                (F1-Score {{ '%.4f'|format(r.best_model.f1_score) }}, Akurasi
+                {{ '%.2f'|format(r.best_model.accuracy * 100) }}%). Lihat halaman
+                <a href="{{ url_for('history.comparison') }}">Perbandingan Algoritma</a> untuk detail.
+            </p>
+            {% endif %}
+        </div></div>
+        {% endif %}
+
+        <!-- Saran singkat kepada pengguna -->
+        <div class="alert-soc {% if vmod == 'high' %}alert-danger-soc{% elif vmod == 'low' %}alert-info-soc{% endif %} mb-4">
+            <b>Saran:</b> {{ r.suggestion }}
+        </div>
+
+        <!-- Explainable AI (SHAP) — alasan berbahasa manusia -->
+        <div class="card-soc mb-4"><div class="card-body">
+            <div class="eyebrow mb-1">EXPLAINABLE AI (SHAP)</div>
+            <h3 class="mb-1">Alasan di balik prediksi ini</h3>
+            <p class="text-muted" style="font-size:.9rem;">
+                Faktor paling berpengaruh terhadap keputusan model, diurutkan dari yang
+                paling menentukan. Tanda
+                <span class="reason-tag reason-tag--phishing">menaikkan indikasi phishing</span>
+                berarti ciri tersebut membuat URL lebih mencurigakan;
+                <span class="reason-tag reason-tag--safe">menurunkan indikasi phishing</span>
+                berarti membuatnya tampak lebih aman.
+            </p>
+
+            {% if reasons %}
+            <ul class="reason-list">
+                {% for rs in reasons %}
+                <li class="reason-item">
+                    <span class="reason-item__text">{{ rs.text }}</span>
+                    {% if rs.direction == 'phishing' %}
+                        <span class="reason-tag reason-tag--phishing">menaikkan indikasi phishing</span>
+                    {% elif rs.direction == 'aman' %}
+                        <span class="reason-tag reason-tag--safe">menurunkan indikasi phishing</span>
+                    {% else %}
+                        <span class="reason-tag reason-tag--neutral">faktor berpengaruh</span>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <div class="alert-soc">
+                Penjelasan belum tersedia untuk prediksi ini. Jalankan
+                <span class="mono">training/generate_shap.py</span> agar penjelasan SHAP aktif.
+            </div>
+            {% endif %}
+        </div></div>
+
+        <!-- Grafik kontribusi fitur -->
+        {% if top_features %}
+        <div class="card-soc mb-4"><div class="card-body">
+            <h3 class="mb-1">Grafik kontribusi fitur</h3>
+            <p class="text-muted" style="font-size:.9rem;">
+                Batang <span style="color:var(--risk-high);font-weight:600;">merah</span> mendorong prediksi ke arah
+                <b>phishing</b>, batang <span style="color:var(--risk-low);font-weight:600;">hijau</span> ke arah
+                <b>aman</b>. Semakin panjang batang, semakin besar pengaruhnya.
+            </p>
+            <div style="height:360px;">
+                <canvas id="shapChart"></canvas>
+            </div>
+
+            <!-- Detail teknis (opsional, untuk pengguna lanjutan) -->
+            <details class="tech-details mt-3">
+                <summary>Lihat detail teknis (nilai fitur &amp; skor SHAP)</summary>
+                <div class="table-responsive mt-3">
+                    <table class="table-soc">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Fitur</th>
+                                <th>Nilai</th>
+                                <th>Skor SHAP</th>
+                                <th>Arah</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for name, value in top_features %}
+                            <tr>
+                                <td class="mono">{{ loop.index }}</td>
+                                <td>{{ feature_labels.get(name, name) }} <span class="mono text-muted" style="font-size:.75rem;">({{ name }})</span></td>
+                                <td class="mono">
+                                    {% if r.extracted_features and name in r.extracted_features %}
+                                        {{ r.extracted_features[name] }}
+                                    {% else %}—{% endif %}
+                                </td>
+                                <td class="mono">{{ '%.4f'|format(value) }}</td>
+                                <td>
+                                    {% if value >= 0 %}
+                                        <span class="risk-pill High">&rarr; phishing</span>
+                                    {% else %}
+                                        <span class="risk-pill Low">&rarr; aman</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </details>
+        </div></div>
+        {% endif %}
+
+        <!-- Seluruh fitur hasil ekstraksi (referensi teknis, tersembunyi default) -->
+        {% if r.extracted_features %}
+        <div class="card-soc mb-4"><div class="card-body">
+            <details class="tech-details">
+                <summary>Lihat seluruh 40 fitur hasil ekstraksi (referensi teknis)</summary>
+                <div class="table-responsive mt-3">
+                    <table class="table-soc">
+                        <thead>
+                            <tr><th>Fitur</th><th>Nilai</th><th>Fitur</th><th>Nilai</th></tr>
+                        </thead>
+                        <tbody>
+                            {% set items = r.extracted_features|dictsort %}
+                            {% for i in range(0, items|length, 2) %}
+                            <tr>
+                                <td>{{ feature_labels.get(items[i][0], items[i][0]) }}</td>
+                                <td class="mono">{{ items[i][1] }}</td>
+                                {% if i + 1 < items|length %}
+                                    <td>{{ feature_labels.get(items[i + 1][0], items[i + 1][0]) }}</td>
+                                    <td class="mono">{{ items[i + 1][1] }}</td>
+                                {% else %}
+                                    <td></td><td></td>
+                                {% endif %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </details>
+        </div></div>
+        {% endif %}
+
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('detection.detect') }}" class="btn btn-teal">Analisis URL Lain</a>
+            <a href="{{ url_for('history.history') }}" class="btn btn-outline-ink">Lihat Riwayat</a>
+        </div>
+
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/shap_chart.js') }}"></script>
+<script>
+    // Data dari server untuk render grafik (aman sebagai JSON literal).
+    const PROB_PCT = {{ r.phishing_probability_pct|tojson }};
+    const TOP_FEATURES = {{ top_features|tojson }};
+
+    document.addEventListener('DOMContentLoaded', function () {
+        renderProbabilityGauge('probGauge', PROB_PCT);
+        renderShapChart('shapChart', TOP_FEATURES);
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}500 — Kesalahan Server{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container container-narrow text-center" style="padding:4rem 0;">
+        <div class="eyebrow mb-2">ERROR 500</div>
+        <h1 style="font-size:3.5rem;margin-bottom:.5rem;">500</h1>
+        <p class="lead" style="color:var(--muted);">
+            Terjadi kesalahan internal pada server.
+        </p>
+        <p style="color:var(--muted);">
+            Silakan coba beberapa saat lagi. Bila masalah berlanjut, periksa log aplikasi
+            atau konfigurasi database.
+        </p>
+        <div class="mt-4">
+            <a href="{{ url_for('main.home') }}" class="btn-teal">Kembali ke Beranda</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

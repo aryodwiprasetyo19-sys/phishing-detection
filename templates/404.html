@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}404 — Halaman Tidak Ditemukan{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container container-narrow text-center" style="padding:4rem 0;">
+        <div class="eyebrow mb-2">ERROR 404</div>
+        <h1 style="font-size:3.5rem;margin-bottom:.5rem;">404</h1>
+        <p class="lead" style="color:var(--muted);">
+            Halaman atau data yang Anda cari tidak ditemukan.
+        </p>
+        <p style="color:var(--muted);">
+            Kemungkinan tautan sudah tidak berlaku atau ID prediksi tidak ada di database.
+        </p>
+        <div class="mt-4 d-flex gap-2 justify-content-center">
+            <a href="{{ url_for('main.home') }}" class="btn-teal">Kembali ke Beranda</a>
+            <a href="{{ url_for('detection.detect') }}" class="btn-teal"
+               style="background:transparent;color:var(--teal-dark);border:1px solid var(--teal);">Deteksi URL</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

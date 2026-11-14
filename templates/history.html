@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Riwayat Prediksi — PhishGuard XAI{% endblock %}
+
+{#
+  history.html
+  ============
+  Menampilkan daftar prediksi terbaru yang tersimpan di database.
+
+  Variabel dari route history.history():
+    predictions  : list dict { id, url, model_used, prediction_label,
+                              phishing_probability, risk_level, created_at }
+    db_available : bool — False bila koneksi database gagal.
+    model_names  : dict { key: display_name } untuk menampilkan nama model ramah.
+#}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+            <div>
+                <div class="eyebrow mb-2">PREDICTION HISTORY</div>
+                <h1 class="mb-2">Riwayat Prediksi</h1>
+                <p class="lead mb-4" style="color:var(--muted);">
+                    {{ predictions|length }} prediksi terbaru yang tersimpan. Klik salah satu
+                    baris untuk melihat analisis lengkapnya.
+                </p>
+            </div>
+            {% if predictions %}
+            <form method="post" action="{{ url_for('history.reset_history') }}"
+                  onsubmit="return confirm('Hapus seluruh riwayat prediksi? Tindakan ini tidak dapat dibatalkan.');">
+                <button type="submit" class="btn btn-outline-ink">Reset Riwayat</button>
+            </form>
+            {% endif %}
+        </div>
+
+        {% if not db_available %}
+        <div class="alert-soc alert-info-soc">
+            Database tidak aktif atau belum dikonfigurasi. Riwayat prediksi disimpan
+            hanya ketika koneksi MySQL tersedia. Lihat <span class="mono">README.md</span>
+            untuk konfigurasi database.
+        </div>
+        {% elif not predictions %}
+        <div class="alert-soc">
+            Belum ada prediksi tersimpan. Mulai dari halaman
+            <a href="{{ url_for('detection.detect') }}">Deteksi URL</a>.
+        </div>
+        {% else %}
+        <div class="card-soc"><div class="card-body">
+            <div class="table-responsive">
+                <table class="table-soc">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>URL</th>
+                            <th>Model</th>
+                            <th>Status</th>
+                            <th>Prob. (%)</th>
+                            <th>Risiko</th>
+                            <th>Waktu</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in predictions %}
+                        {% set status_text = 'Phishing' if p.prediction_label == 'phishing' else 'Aman' %}
+                        <tr>
+                            <td class="mono">{{ p.id }}</td>
+                            <td class="mono" style="max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ p.url }}">
+                                {{ p.url }}
+                            </td>
+                            <td>{{ model_names.get(p.model_used, p.model_used) }}</td>
+                            <td><span class="label-pill {{ p.prediction_label }}">{{ status_text }}</span></td>
+                            <td class="mono">{{ '%.1f'|format(p.phishing_probability * 100) }}</td>
+                            <td><span class="risk-pill {{ p.risk_level }}">{{ p.risk_level }}</span></td>
+                            <td class="mono" style="font-size:.8rem;">{{ p.created_at }}</td>
+                            <td>
+                                <a href="{{ url_for('detection.result', prediction_id=p.id) }}"
+                                   class="btn btn-outline-ink" style="padding:.25rem .7rem;font-size:.8rem;">
+                                    Detail
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div></div>
+        {% endif %}
+
+    </div>
+</section>
+{% endblock %}
