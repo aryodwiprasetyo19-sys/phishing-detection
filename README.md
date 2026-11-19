@@ -222,5 +222,6 @@ Setelah diunduh, ekstrak berkas tersebut ke folder `models_store/` sebelum menja
 
 ---
 
-## Lisensi
-Proyek ini dibuat untuk keperluan akademik dan penelitian skripsi di bawah lisensi MIT. Silakan gunakan dan kembangkan dengan mencantumkan atribusi penulis.
+## 🔒 Lisensi & Hak Cipta
+**Copyright © 2026 Aryo Dwi Prasetyo — All Rights Reserved.**  
+Repositori ini dipublikasikan semata-mata untuk tujuan demonstrasi portofolio dan evaluasi rekrutmen. Dilarang menyalin atau menggunakan ulang kode tanpa izin tertulis dari pemilik. Lihat berkas [LICENSE](./LICENSE) untuk detail lengkap.

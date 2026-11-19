@@ -1,3 +1,4 @@
+# Copyright (c) 2026 Aryo Dwi Prasetyo - Universitas Gunadarma. All Rights Reserved.
 """
 ml/model_loader.py
 ===================

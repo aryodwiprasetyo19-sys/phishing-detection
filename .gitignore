@@ -4,8 +4,13 @@
 
 # Kredensial & konfigurasi lokal (JANGAN DIPUSH KE GITHUB)
 .env
+.env.*
+!.env.example
 .env.local
 .env.*.local
+*.pem
+*.key
+*.cert
 
 # Arsip ZIP & File Besar (>100MB dilarang oleh GitHub)
 *.zip

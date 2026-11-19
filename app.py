@@ -1,3 +1,4 @@
+# Copyright (c) 2026 Aryo Dwi Prasetyo - Universitas Gunadarma. All Rights Reserved.
 """
 # ==============================================================================
 # PhishGuard XAI — Deteksi Website Phishing Berbasis Explainable Machine Learning

@@ -1,3 +1,4 @@
+# Copyright (c) 2026 Aryo Dwi Prasetyo - Universitas Gunadarma. All Rights Reserved.
 """
 training/train_models.py
 ========================
